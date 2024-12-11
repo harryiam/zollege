@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { fetchNews } from "./NewsService"; // Your NewsService.js to fetch news
+import React, { useContext, useState, useEffect } from "react";
+import { ThemeContext } from "./ThemeContext"; // Import ThemeContext
+import { fetchNews } from "./NewsService"; // Fetch articles using NewsService
 import {
   Container,
   Typography,
@@ -13,7 +14,6 @@ import {
   Select,
   FormControl,
   InputLabel,
-  Grid,
 } from "@mui/material";
 
 const Dashboard = ({ user, onLogout }) => {
@@ -27,9 +27,13 @@ const Dashboard = ({ user, onLogout }) => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [payoutRate, setPayoutRate] = useState(5); // Default payout per article
 
+  // Access the theme context
+  const { toggleTheme } = useContext(ThemeContext);
+
+  // Fetch articles on component mount
   useEffect(() => {
     const fetchArticles = async () => {
-      const fetchedArticles = await fetchNews("technology", 10); // Fetch articles (10 articles)
+      const fetchedArticles = await fetchNews("technology", 10); // Fetch 10 articles related to "technology"
       setArticles(fetchedArticles);
       setFilteredArticles(fetchedArticles);
       setLoading(false);
@@ -37,11 +41,12 @@ const Dashboard = ({ user, onLogout }) => {
     fetchArticles();
   }, []);
 
+  // Apply filters when filter state changes
   useEffect(() => {
     applyFilters();
   }, [authorFilter, dateFilter, typeFilter, searchKeyword]);
 
-  // Apply Filters based on state variables
+  // Filter articles based on user input
   const applyFilters = () => {
     let filtered = articles;
 
@@ -84,14 +89,22 @@ const Dashboard = ({ user, onLogout }) => {
 
   return (
     <Container maxWidth="lg">
+      {/* Header Section */}
       <Typography variant="h4" align="center" gutterBottom>
         Welcome, {user.email}
       </Typography>
 
-      <Button variant="outlined" color="secondary" fullWidth onClick={onLogout}>
-        Logout
-      </Button>
+      {/* Theme Toggle and Logout Buttons */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+        <Button variant="outlined" onClick={toggleTheme}>
+          Toggle Theme
+        </Button>
+        <Button variant="outlined" color="secondary" onClick={onLogout}>
+          Logout
+        </Button>
+      </Box>
 
+      {/* Payout and Article Summary */}
       <Typography variant="h5" align="center" sx={{ mt: 3 }}>
         Total Articles: {filteredArticles.length}
       </Typography>
@@ -99,69 +112,73 @@ const Dashboard = ({ user, onLogout }) => {
         Total Payout: ${totalPayout}
       </Typography>
 
-      {/* Global Search Bar */}
-      <TextField
-        label="Search Articles"
-        variant="outlined"
-        fullWidth
-        value={searchKeyword}
-        onChange={(e) => setSearchKeyword(e.target.value)}
-        sx={{ mb: 3 }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">🔍</InputAdornment>
-          ),
-        }}
-      />
+      {/* Filters Section */}
+      <Box sx={{ mt: 3 }}>
+        {/* Global Search Bar */}
+        <TextField
+          label="Search Articles"
+          variant="outlined"
+          fullWidth
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          sx={{ mb: 3 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">🔍</InputAdornment>
+            ),
+          }}
+        />
 
-      {/* Filter by Author */}
-      <TextField
-        label="Filter by Author"
-        variant="outlined"
-        fullWidth
-        value={authorFilter}
-        onChange={(e) => setAuthorFilter(e.target.value)}
-        sx={{ mb: 3 }}
-      />
+        {/* Filter by Author */}
+        <TextField
+          label="Filter by Author"
+          variant="outlined"
+          fullWidth
+          value={authorFilter}
+          onChange={(e) => setAuthorFilter(e.target.value)}
+          sx={{ mb: 3 }}
+        />
 
-      {/* Filter by Date */}
-      <FormControl fullWidth sx={{ mb: 3 }}>
-        <InputLabel>Filter by Date</InputLabel>
-        <Select
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-          label="Filter by Date"
-        >
-          <MenuItem value="">None</MenuItem>
-          <MenuItem value="last 7 days">Last 7 Days</MenuItem>
-          <MenuItem value="last 30 days">Last 30 Days</MenuItem>
-        </Select>
-      </FormControl>
+        {/* Filter by Date */}
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel>Filter by Date</InputLabel>
+          <Select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            label="Filter by Date"
+          >
+            <MenuItem value="">None</MenuItem>
+            <MenuItem value="last 7 days">Last 7 Days</MenuItem>
+            <MenuItem value="last 30 days">Last 30 Days</MenuItem>
+          </Select>
+        </FormControl>
 
-      {/* Filter by Type (News, Blogs) */}
-      <FormControl fullWidth sx={{ mb: 3 }}>
-        <InputLabel>Filter by Type</InputLabel>
-        <Select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          label="Filter by Type"
-        >
-          <MenuItem value="news">News</MenuItem>
-          <MenuItem value="blogs">Blogs</MenuItem>
-        </Select>
-      </FormControl>
+        {/* Filter by Type (News, Blogs) */}
+        <FormControl fullWidth sx={{ mb: 3 }}>
+          <InputLabel>Filter by Type</InputLabel>
+          <Select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            label="Filter by Type"
+          >
+            <MenuItem value="news">News</MenuItem>
+            <MenuItem value="blogs">Blogs</MenuItem>
+          </Select>
+        </FormControl>
 
-      {/* Payout Rate */}
-      <TextField
-        label="Payout per Article ($)"
-        variant="outlined"
-        type="number"
-        fullWidth
-        value={payoutRate}
-        onChange={(e) => setPayoutRate(Number(e.target.value))}
-        sx={{ mb: 3 }}
-      />
+        {/* Payout Rate */}
+        <TextField
+          label="Payout per Article ($)"
+          variant="outlined"
+          type="number"
+          fullWidth
+          value={payoutRate}
+          onChange={(e) => setPayoutRate(Number(e.target.value))}
+          sx={{ mb: 3 }}
+        />
+      </Box>
 
+      {/* Articles Section */}
       {loading ? (
         <Typography variant="h6" align="center">
           Loading articles...
