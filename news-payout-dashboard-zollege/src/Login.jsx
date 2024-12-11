@@ -3,7 +3,7 @@ import { auth, googleProvider } from "./firebaseConfig";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { TextField, Button, Container, Typography, Box } from "@mui/material";
 
-const Login = () => {
+const Login = ({ onLogin }) => { // Add onLogin prop here
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -13,22 +13,23 @@ const Login = () => {
       const user = userCredential.user;
       localStorage.setItem("user", JSON.stringify(user));
       alert("Login successful!");
+      onLogin(user); // Notify parent of successful login
     } catch (error) {
       alert(error.message);
     }
   };
-  
+
   const handleGoogleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       localStorage.setItem("user", JSON.stringify(user));
       alert("Google login successful!");
+      onLogin(user); // Notify parent of successful login
     } catch (error) {
       alert(error.message);
     }
   };
-  
 
   return (
     <Container maxWidth="sm">
