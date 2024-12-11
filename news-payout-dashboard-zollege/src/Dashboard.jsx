@@ -1,195 +1,138 @@
-import React, { useContext, useState, useEffect } from "react";
-import { ThemeContext } from "./ThemeContext"; // Import ThemeContext
-import { fetchNews } from "./NewsService"; // Fetch articles using NewsService
+import React, { useState, useEffect, useCallback } from "react";
+import { fetchNews } from "./NewsService";
 import {
   Container,
   Typography,
   Box,
+  TextField,
   Card,
   CardContent,
   Button,
-  TextField,
-  InputAdornment,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
 } from "@mui/material";
+import debounce from "lodash/debounce"; // Install lodash for debouncing: npm install lodash
 
-const Dashboard = ({ user, onLogout }) => {
-  const [articles, setArticles] = useState([]);
-  const [filteredArticles, setFilteredArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
+const Dashboard = () => {
+  const [articles, setArticles] = useState([]); // All fetched articles
+  const [filteredArticles, setFilteredArticles] = useState([]); // Articles after applying author filter
+  const [loading, setLoading] = useState(false);
 
-  const [authorFilter, setAuthorFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState(""); // e.g., 'last 7 days'
-  const [typeFilter, setTypeFilter] = useState("news"); // e.g., 'news', 'blogs'
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [payoutRate, setPayoutRate] = useState(5); // Default payout per article
+  // Filters
+  const [query, setQuery] = useState("tesla");
+  const [from, setFrom] = useState(""); // Start date
+  const [to, setTo] = useState("");   // End date
+  const [authorFilter, setAuthorFilter] = useState(""); // Local filter for author
 
-  // Access the theme context
-  const { toggleTheme } = useContext(ThemeContext);
+  const today = new Date().toISOString().split("T")[0]; // Today's date in YYYY-MM-DD format
 
-  // Fetch articles on component mount
+  // Debounced function for fetching articles
+  const debouncedFetch = useCallback(
+    debounce((query, from, to) => {
+      fetchFilteredNews(query, from, to);
+    }, 500),
+    []
+  );
+
+  // Fetch articles when query, from, or to changes
   useEffect(() => {
-    const fetchArticles = async () => {
-      const fetchedArticles = await fetchNews("technology", 10); // Fetch 10 articles related to "technology"
-      setArticles(fetchedArticles);
-      setFilteredArticles(fetchedArticles);
-      setLoading(false);
-    };
-    fetchArticles();
-  }, []);
+    debouncedFetch(query, from, to);
+  }, [query, from, to, debouncedFetch]);
 
-  // Apply filters when filter state changes
+  // Apply author filter locally
   useEffect(() => {
-    applyFilters();
-  }, [authorFilter, dateFilter, typeFilter, searchKeyword]);
-
-  // Filter articles based on user input
-  const applyFilters = () => {
-    let filtered = articles;
-
     if (authorFilter) {
-      filtered = filtered.filter((article) =>
+      const filtered = articles.filter((article) =>
         article.author?.toLowerCase().includes(authorFilter.toLowerCase())
       );
+      setFilteredArticles(filtered);
+    } else {
+      setFilteredArticles(articles); // Reset to all articles when authorFilter is cleared
     }
+  }, [authorFilter, articles]);
 
-    if (searchKeyword) {
-      filtered = filtered.filter((article) =>
-        article.title.toLowerCase().includes(searchKeyword.toLowerCase())
-      );
-    }
-
-    if (dateFilter) {
-      const today = new Date();
-      let dateLimit;
-      if (dateFilter === "last 7 days") {
-        dateLimit = new Date(today.setDate(today.getDate() - 7));
-      } else if (dateFilter === "last 30 days") {
-        dateLimit = new Date(today.setDate(today.getDate() - 30));
-      }
-      filtered = filtered.filter(
-        (article) => new Date(article.publishedAt) >= dateLimit
-      );
-    }
-
-    if (typeFilter) {
-      filtered = filtered.filter((article) =>
-        article.content?.toLowerCase().includes(typeFilter.toLowerCase())
-      );
-    }
-
-    setFilteredArticles(filtered);
+  const fetchFilteredNews = async (query, from, to) => {
+    setLoading(true);
+    const fetchedArticles = await fetchNews({ query, from, to });
+    setArticles(fetchedArticles); // Update the articles
+    setFilteredArticles(fetchedArticles); // Reset filteredArticles after a new fetch
+    setLoading(false);
   };
-
-  // Calculate total payout
-  const totalPayout = filteredArticles.length * payoutRate;
 
   return (
     <Container maxWidth="lg">
-      {/* Header Section */}
       <Typography variant="h4" align="center" gutterBottom>
-        Welcome, {user.email}
+        News Dashboard
       </Typography>
 
-      {/* Theme Toggle and Logout Buttons */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-        <Button variant="outlined" onClick={toggleTheme}>
-          Toggle Theme
-        </Button>
-        <Button variant="outlined" color="secondary" onClick={onLogout}>
+      {/* Logout Button */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+        <Button variant="outlined" color="secondary" onClick={() => alert("Logout function")}>
           Logout
         </Button>
       </Box>
 
-      {/* Payout and Article Summary */}
-      <Typography variant="h5" align="center" sx={{ mt: 3 }}>
-        Total Articles: {filteredArticles.length}
-      </Typography>
-      <Typography variant="h6" align="center" sx={{ mt: 2 }}>
-        Total Payout: ${totalPayout}
-      </Typography>
-
-      {/* Filters Section */}
-      <Box sx={{ mt: 3 }}>
-        {/* Global Search Bar */}
+      {/* Filters */}
+      <Box sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}>
+        {/* Global Search */}
         <TextField
-          label="Search Articles"
+          label="Search"
           variant="outlined"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           fullWidth
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
-          sx={{ mb: 3 }}
+        />
+
+        {/* Date Range */}
+        <TextField
+          label="From"
+          type="date"
+          InputLabelProps={{ shrink: true }}
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
           InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">🔍</InputAdornment>
-            ),
+            inputProps: {
+              max: to ? to : today, // Ensure "from" is never later than "to"
+            },
+          }}
+        />
+        <TextField
+          label="To"
+          type="date"
+          InputLabelProps={{ shrink: true }}
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          InputProps={{
+            inputProps: {
+              min: from ? from : "", // Ensure "to" is never earlier than "from"
+              max: today, // Prevent selecting future dates
+            },
           }}
         />
 
-        {/* Filter by Author */}
+        {/* Author Filter */}
         <TextField
           label="Filter by Author"
           variant="outlined"
-          fullWidth
           value={authorFilter}
           onChange={(e) => setAuthorFilter(e.target.value)}
-          sx={{ mb: 3 }}
-        />
-
-        {/* Filter by Date */}
-        <FormControl fullWidth sx={{ mb: 3 }}>
-          <InputLabel>Filter by Date</InputLabel>
-          <Select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            label="Filter by Date"
-          >
-            <MenuItem value="">None</MenuItem>
-            <MenuItem value="last 7 days">Last 7 Days</MenuItem>
-            <MenuItem value="last 30 days">Last 30 Days</MenuItem>
-          </Select>
-        </FormControl>
-
-        {/* Filter by Type (News, Blogs) */}
-        <FormControl fullWidth sx={{ mb: 3 }}>
-          <InputLabel>Filter by Type</InputLabel>
-          <Select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            label="Filter by Type"
-          >
-            <MenuItem value="news">News</MenuItem>
-            <MenuItem value="blogs">Blogs</MenuItem>
-          </Select>
-        </FormControl>
-
-        {/* Payout Rate */}
-        <TextField
-          label="Payout per Article ($)"
-          variant="outlined"
-          type="number"
           fullWidth
-          value={payoutRate}
-          onChange={(e) => setPayoutRate(Number(e.target.value))}
-          sx={{ mb: 3 }}
         />
       </Box>
 
-      {/* Articles Section */}
+      {/* Fetch News Button */}
+      <Button variant="contained" onClick={() => fetchFilteredNews(query, from, to)}>
+        Fetch News
+      </Button>
+
+      {/* Articles */}
       {loading ? (
-        <Typography variant="h6" align="center">
-          Loading articles...
-        </Typography>
+        <Typography align="center">Loading articles...</Typography>
       ) : (
         <Box
           sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-            gap: 3,
             mt: 3,
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
           }}
         >
           {filteredArticles.map((article, index) => (
@@ -200,9 +143,7 @@ const Dashboard = ({ user, onLogout }) => {
                 <Typography variant="body2">
                   {new Date(article.publishedAt).toLocaleDateString()}
                 </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {article.description || "No description available"}
-                </Typography>
+                <Typography>{article.description || "No description available"}</Typography>
               </CardContent>
             </Card>
           ))}
@@ -213,3 +154,7 @@ const Dashboard = ({ user, onLogout }) => {
 };
 
 export default Dashboard;
+
+
+
+
