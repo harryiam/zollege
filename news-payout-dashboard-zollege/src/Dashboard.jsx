@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   Button,
+  Grid2,
 } from "@mui/material";
 import debounce from "lodash/debounce"; // For debouncing
 import { saveAs } from "file-saver"; // For file downloading
@@ -145,16 +146,12 @@ const Dashboard = () => {
     count: groupBy("author")[author].count,
   }));
 
-  const articleDataByType = Object.keys(groupBy("category")).map((type) => ({
-    name: type,
-    count: groupBy("category")[type].count,
-  }));
-
   return (
     <Container maxWidth="lg">
       <Typography variant="h4" align="center" gutterBottom>
         News Dashboard
       </Typography>
+      
 
       {/* Logout Button */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
@@ -165,13 +162,22 @@ const Dashboard = () => {
 
       {/* Filters */}
       <Box sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}>
+        <Grid2 sx={{columnGap:'5px', rowGap:'5px', display:'flex'}}>
         <TextField
           label="Search"
           variant="outlined"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          fullWidth
+          
         />
+        <TextField
+          label="Filter by Author"
+          variant="outlined"
+          value={authorFilter}
+          onChange={(e) => setAuthorFilter(e.target.value)}
+         
+        />
+        </Grid2>
         <TextField
           label="From"
           type="date"
@@ -197,19 +203,17 @@ const Dashboard = () => {
             },
           }}
         />
-        <TextField
-          label="Filter by Author"
-          variant="outlined"
-          value={authorFilter}
-          onChange={(e) => setAuthorFilter(e.target.value)}
-          fullWidth
-        />
+        {/* Fetch News Button */}
+      <Button variant="contained" onClick={() => fetchFilteredNews(query, from, to)}>
+        Fetch News
+      </Button>
+
       </Box>
 
       {/* Payout Rate */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3, display:'flex', gap:'5px'}}>
         <TextField
-          label="Payout per Article ($)"
+          label="Payout per Article in ($)"
           variant="outlined"
           value={payoutRate}
           onChange={handlePayoutRateChange}
@@ -220,10 +224,6 @@ const Dashboard = () => {
         </Typography>
       </Box>
 
-      {/* Fetch News Button */}
-      <Button variant="contained" onClick={() => fetchFilteredNews(query, from, to)}>
-        Fetch News
-      </Button>
 
       {/* Export Buttons */}
       <Box sx={{ mt: 3, display: "flex", gap: 2 }}>
