@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { fetchNews } from "./NewsService";
+import { fetchNews } from "../services/NewsService";
 import {
   Container,
   Typography,
@@ -43,7 +43,7 @@ const Dashboard = () => {
   const [authorFilter, setAuthorFilter] = useState(""); // Local filter for author
   const [payoutRate, setPayoutRate] = useState(
     localStorage.getItem("payoutRate") || 5
-  ); // Default to 5 if no value in localStorage
+  ); 
   const [chartType, setChartType] = useState("line"); // For switching chart types
 
   const today = new Date().toISOString().split("T")[0]; // Today's date in YYYY-MM-DD format
@@ -71,15 +71,15 @@ const Dashboard = () => {
       );
       setFilteredArticles(filtered);
     } else {
-      setFilteredArticles(articles); // Reset to all articles when authorFilter is cleared
+      setFilteredArticles(articles); 
     }
   }, [authorFilter, articles]);
 
   const fetchFilteredNews = async (query, from, to) => {
     setLoading(true);
     const fetchedArticles = await fetchNews({ query, from, to });
-    setArticles(fetchedArticles); // Update the articles
-    setFilteredArticles(fetchedArticles); // Reset filteredArticles after a new fetch
+    setArticles(fetchedArticles); 
+    setFilteredArticles(fetchedArticles); 
     setLoading(false);
   };
 

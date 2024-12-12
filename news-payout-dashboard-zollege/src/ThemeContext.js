@@ -1,16 +1,14 @@
 import React, { createContext, useState, useMemo } from "react";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-// Create the context
 export const ThemeContext = createContext();
 
 const ThemeContextProvider = ({ children }) => {
   const [darkMode, setDarkMode] = useState(false);
 
-  // Toggle between light and dark themes
   const toggleTheme = () => setDarkMode((prevMode) => !prevMode);
 
-  // Define the theme dynamically
+
   const theme = useMemo(
     () =>
       createTheme({
